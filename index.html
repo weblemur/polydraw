@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta charset="utf-8">
+<style type="text/css">
+  * { padding: 0; margin: 0;}
+  html { height: 100%; box-sizing: border-box;}
+  body {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    height: 100%;
+    width: 100%;
+    text-align: center;
+    background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #71c7ad), color-stop(60%, #062c3d), color-stop(80%, #070a1f)), #070a1f;
+    background: -webkit-linear-gradient(top, #71c7ad, #062c3d 60%, #070a1f 80%), #070a1f;
+    background: -moz-linear-gradient(top, #71c7ad, #062c3d 60%, #070a1f 80%), #070a1f;
+    background: -o-linear-gradient(top, #71c7ad, #062c3d 60%, #070a1f 80%), #070a1f;
+    background: linear-gradient(top, #71c7ad, #062c3d 60%, #070a1f 80%), #070a1f;
+  }
+  svg { padding: 100px; }
+</style></head><body>
+<script src="./js/d3.v3.min.js"></script>
+<script src="./js/cubehelix.min.js"></script>
+<script>
+
+
+// Customizable variables:
+var radius = 200,
+    layers = 6,
+    slices = 6,
+    lightOffset = 64,
+    colorRange = [d3.hsl(120, .8, .8), d3.hsl(276, .1, .1)];
+
+// Get vertecies
+var vertecies = radialVertecies(radius, layers, slices);
+
+// Create the triangular faces using the d3 Voronoi function
+var drawArea = radius*2;
+var voronoi = d3.geom.voronoi()
+    .clipExtent([[0, 0], [drawArea, drawArea]]);
+
+// Get the color range
+var color = d3.scale.cubehelix()
+    .domain([1, radius+lightOffset])
+    .range(colorRange)
+    .clamp(true);
+
+// Draw the polygon
+d3.select("body").append("svg")
+    .attr("width", drawArea)
+    .attr("height", drawArea)
+  .selectAll("path")
+    .data(voronoi.triangles(vertecies))
+  .enter().append("path")
+    .style({"fill": function(d) { return color(radialDistance(radius, d3.geom.polygon(d).centroid(), lightOffset)); },
+            "stroke": function(d) { return color(radialDistance(radius, d3.geom.polygon(d).centroid(), lightOffset)); },
+            "stroke-width": .5 })
+    .attr("d", function(d) { return "M" + d.join("L") + "Z"; });
+
+
+function radialDistance(radius, point, offset) {
+  // Creates a gradiated color for each individual triangle generated to simulate a lighting effect.
+  var x = point[0],
+      y = point[1],
+      dx = x-radius-offset,
+      dy = y-radius+offset,
+      distance = Math.sqrt(dx*dx+dy*dy);
+    cosole.log(distance);
+    return distance;
+}
+
+function radialVertecies(radius, layers, slices) {
+  // Takes the radius (in pixels), the number of concentric rings (layers), and the number of points per ring (slices), and outputs verticies for our polygon (drawn outside-in).
+
+  var vertecies = [[radius, radius]],
+      // Note: The central vertex is inserted here since only the radius is needed to compute it.
+      pi = Math.PI,
+      circle = 2*pi,
+      depth, i, j, a, x, y, v;
+
+  // Each layer is iterated through, and a point for every slice is computed in sequential order around a circle.
+  // The depth of each layer (distance from center point) is computed out using a 
+  for (i=0; i<=layers; i++) {
+    depth = Math.sqrt(1-(i/layers)*(i/layers)); // Depth factor of layer - ranging from 1 (deepest) to 0 (closest)
+    for (j=0; j<slices; j++) {
+      a = circle*j/slices-(pi/slices)*i; // "-(pi/slices)*i" to make the rings offset
+      x = Math.cos(a)*radius*depth;
+      y = Math.sin(a)*radius*depth;
+      v = [x+radius, y+radius]; // "+radius" to center it on the drawing area
+      vertecies.push(v);
+    }
+  }
+  return vertecies;
+}
+
+</script>
+</body></html>
